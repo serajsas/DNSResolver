@@ -56,7 +56,7 @@ public class DNSQueryHandler {
 		// upper-bound is exclusive, so I added a one to account for 65536
 		int transactionID = random.nextInt(65537);
 		if (verboseTracing) {
-			System.out.println("Query ID     " + transactionID + " " + node.getHostName() + " -> " + server.getHostAddress());
+			System.out.println("Query ID     " + transactionID + " " + node.getHostName() + "  " + node.getType() + " --> " + server.getHostAddress());
 		}
 		getMessageQuery(node, transactionID, message);
 		DatagramPacket sentPacket = new DatagramPacket(message, message.length, server, DEFAULT_DNS_PORT);
