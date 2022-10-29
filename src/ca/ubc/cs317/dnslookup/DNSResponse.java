@@ -14,8 +14,8 @@ public class DNSResponse {
 		dnsrData = new DNSRData();
 	}
 
-	public Set<ResourceRecord> decode(int transactionID, DataInputStream dataInputStream, byte[] responseBuffer,
-									  DNSCache cache) throws Exception {
+	public Set<ResourceRecord> decode(int transactionID, DataInputStream dataInputStream,
+									  byte[] responseBuffer, DNSCache cache) throws Exception {
 		dnsHeader.decode(dataInputStream, transactionID);
 		dnsQuery.decode(dataInputStream, responseBuffer, dnsHeader.QDCOUNT);
 		dnsrData.decode(dataInputStream, responseBuffer, dnsHeader.ANCOUNT,
@@ -35,6 +35,7 @@ public class DNSResponse {
 				DNSQueryHandler.verbosePrintResourceRecord(r, r.getType().getCode());
 			}
 		}
+		dnsHeader.isFlaggedError(this);
 		return dnsrData.nameServers;
 	}
 }

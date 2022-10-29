@@ -174,17 +174,6 @@ public class DNSLookupService {
 		return cache.getCachedResults(node);
 	}
 
-//	private static DNSNode getCNameNode(DNSNode node, int indirectionLevel) throws MaxIndirectionLevelReachedException {
-//		if (indirectionLevel > MAX_INDIRECTION_LEVEL) {
-//			throw new MaxIndirectionLevelReachedException();
-//		}
-//		DNSNode cNameNode = new DNSNode(node.getHostName(), RecordType.CNAME);
-//		if (!cache.getCachedResults(cNameNode).isEmpty()) {
-//			return cache.getCachedResults(node).stream().iterator().next().getNode();
-//		}
-//		return null;
-//	}
-
 	/**
 	 * Retrieves DNS results from a specified DNS server. Queries are sent in iterative mode,
 	 * and the query is repeated with a new server if the provided one is non-authoritative.

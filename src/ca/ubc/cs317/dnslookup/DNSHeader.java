@@ -56,4 +56,11 @@ public class DNSHeader {
 		outputStream.writeShort(NSCOUNT);
 		outputStream.writeShort(ARCOUNT);
 	}
+
+	public void isFlaggedError(DNSResponse dnsResponse) throws Exception {
+		if (this.RCODE == 1 || this.RCODE == 2 || this.RCODE == 3 || this.RCODE == 4 || this.RCODE == 5 ||
+				(this.RCODE == 0 && this.AA == 1 && dnsResponse.dnsrData.answers.isEmpty())) {
+			throw new Exception();
+		}
+	}
 }

@@ -85,11 +85,13 @@ public class DNSQueryHandler {
 	 * @param cache          To store the decoded server's response
 	 * @return A set of resource records corresponding to the name servers of the response.
 	 */
-	public static Set<ResourceRecord> decodeAndCacheResponse(int transactionID, ByteBuffer responseBuffer, DNSCache cache) throws Exception {
+	public static Set<ResourceRecord> decodeAndCacheResponse(int transactionID, ByteBuffer responseBuffer,
+															 DNSCache cache) throws Exception {
 		byte[] responseArray = responseBuffer.array();
 		ByteArrayInputStream inputStream = new ByteArrayInputStream(responseArray);
 		DataInputStream dataInputStream = new DataInputStream(inputStream);
 		DNSResponse dnsResponse = new DNSResponse();
+
 		return dnsResponse.decode(transactionID, dataInputStream, responseArray, cache);
 	}
 
