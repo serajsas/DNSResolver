@@ -3,3 +3,10 @@
 /bin/
 /out/
 a2_ubcsabo.iml
+.DS_Store
+DNSResolver.iml
+src/.DS_Store
+src/ca/.DS_Store
+src/ca/ubc/.DS_Store
+src/ca/ubc/cs317/.DS_Store
+src

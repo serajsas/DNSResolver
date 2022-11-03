@@ -10,8 +10,7 @@ public class DNSHeader {
 	public DNSHeader() {
 	}
 
-	public DNSHeader(int ID, int QR, int opcode, int AA, int TC, int RD, int RA, int z,
-					 int RCODE, int QDCOUNT, int ANCOUNT, int NSCOUNT, int ARCOUNT) {
+	public DNSHeader(int ID, int QR, int opcode, int AA, int TC, int RD, int RA, int z, int RCODE, int QDCOUNT, int ANCOUNT, int NSCOUNT, int ARCOUNT) {
 		this.ID = ID;
 		this.QR = QR;
 		this.Opcode = opcode;
@@ -27,10 +26,10 @@ public class DNSHeader {
 		this.ARCOUNT = ARCOUNT;
 	}
 
-	public void decode(DataInputStream dataInputStream, int transactionID) throws IOException {
+	public void decode(DataInputStream dataInputStream, int transactionID) throws IOException, MissedResponseException {
 		this.ID = dataInputStream.readUnsignedShort();
 		if (ID != transactionID) {
-			return;
+			throw new MissedResponseException();
 		}
 		int bits = dataInputStream.readUnsignedShort();
 		QR = (bits >>> 15) & 0b1;
@@ -49,18 +48,18 @@ public class DNSHeader {
 
 	public void encode(DataOutputStream outputStream) throws IOException {
 		outputStream.writeShort(this.ID);
-		outputStream.writeShort((QR << 15) + (Opcode << 11) + (AA << 10) +
-				(TC << 9) + (RD << 8) + (RA << 7) + (Z << 4) + RCODE);
+		outputStream.writeShort((QR << 15) + (Opcode << 11) + (AA << 10) + (TC << 9) + (RD << 8) + (RA << 7) + (Z << 4) + RCODE);
 		outputStream.writeShort(QDCOUNT);
 		outputStream.writeShort(ANCOUNT);
 		outputStream.writeShort(NSCOUNT);
 		outputStream.writeShort(ARCOUNT);
 	}
 
-	public void isFlaggedError(DNSResponse dnsResponse) throws Exception {
+	public boolean isFlaggedError(DNSResponse dnsResponse) {
 		if (this.RCODE == 1 || this.RCODE == 2 || this.RCODE == 3 || this.RCODE == 4 || this.RCODE == 5 ||
 				(this.RCODE == 0 && this.AA == 1 && dnsResponse.dnsrData.answers.isEmpty())) {
-			throw new Exception();
+			return true;
 		}
+		return false;
 	}
 }

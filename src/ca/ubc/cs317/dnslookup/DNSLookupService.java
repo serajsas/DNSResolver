@@ -11,8 +11,10 @@ public class DNSLookupService {
 
 	private static boolean p1Flag = false; // isolating part 1
 	private static final int MAX_INDIRECTION_LEVEL = 10;
+	private static final int MAX_ATTEMPTS = 10;
 	private static InetAddress rootServer;
 	private static DNSCache cache = DNSCache.getInstance();
+	private static int level = 0;
 
 	/**
 	 * Main function, called when program is first invoked.
@@ -146,7 +148,8 @@ public class DNSLookupService {
 	 */
 	private static void findAndPrintResults(String hostName, RecordType type) {
 		DNSNode node = new DNSNode(hostName, type);
-		printResults(node, getResults(node, 0));
+		level = 0;
+		printResults(node, getResults(node, level));
 	}
 
 	/**
@@ -161,16 +164,59 @@ public class DNSLookupService {
 	 * @return A set of resource records corresponding to the specific query requested.
 	 */
 	private static Set<ResourceRecord> getResults(DNSNode node, int indirectionLevel) {
-		// Note that a resent query will have the same query ID.
-
-		if (p1Flag) { // For isolating part 1 testing only
-			retrieveResultsFromServer(node, rootServer);
-			return Collections.emptySet();
-		} else if (indirectionLevel > MAX_INDIRECTION_LEVEL) {
+		if (indirectionLevel > MAX_INDIRECTION_LEVEL) {
 			System.err.println("Maximum number of indirection levels reached.");
 			return Collections.emptySet();
 		}
-		// TODO (PART 1/2): Implement this
+		int attempts = 0;
+		while (attempts < MAX_ATTEMPTS) {
+			attempts++;
+			level = 0;
+			Set<ResourceRecord> resourceRecords = new HashSet<>();
+			DNSNode cnameNode = getCnameResourceRecords(node, 0);
+			if (cnameNode != null && !cnameNode.equals(node)) {
+				resourceRecords = resolveDNS(cnameNode);
+				if (!resourceRecords.isEmpty()) {
+					ResourceRecord cnameRecord = (ResourceRecord) resourceRecords.toArray()[0];
+					node = new DNSNode(cnameRecord.getHostName(), node.getType());
+				}
+			} else {
+				resourceRecords = resolveDNS(node);
+			}
+			if (!resourceRecords.isEmpty()) {
+				break;
+			}
+		}
+		return cache.getCachedResults(node);
+	}
+
+	private static DNSNode getCnameResourceRecords(DNSNode node, int levels) {
+		if (levels > MAX_INDIRECTION_LEVEL) {
+			System.err.println("Maximum number of indirection levels reached.");
+			return null;
+		}
+		DNSNode cnameServerToUse = new DNSNode(node.getHostName(), RecordType.CNAME);
+		if (cache.getCachedResults(cnameServerToUse).isEmpty()) {
+			return node;
+		}
+		ResourceRecord cnameServerIPRecord = (ResourceRecord) cache.getCachedResults(cnameServerToUse).toArray()[0];
+		DNSNode cnameNode = new DNSNode(cnameServerIPRecord.getTextResult(), node.getType());
+		if (!cache.getCachedResults(cnameNode).isEmpty()) {
+			return cnameNode;
+		}
+		return getCnameResourceRecords(cnameNode, levels + 1);
+
+	}
+
+	private static Set<ResourceRecord> resolveDNS(DNSNode node) {
+		if (level > MAX_INDIRECTION_LEVEL) {
+			System.err.println("Maximum number of indirection levels reached.");
+			return Collections.emptySet();
+		}
+		level = level + 1;
+		if (cache.getCachedResults(node).isEmpty()) {
+			retrieveResultsFromServer(node, rootServer);
+		}
 		return cache.getCachedResults(node);
 	}
 
@@ -184,23 +230,52 @@ public class DNSLookupService {
 	 */
 	private static void retrieveResultsFromServer(DNSNode node, InetAddress server) {
 		byte[] message = new byte[512]; // query is no longer than 512 bytes
+		DNSServerResponse serverResponse = null;
 		try {
-			DNSServerResponse serverResponse = DNSQueryHandler.buildAndSendQuery(message, server, node);
-			Set<ResourceRecord> nameservers = DNSQueryHandler.decodeAndCacheResponse(serverResponse.getTransactionID(),
-					serverResponse.getResponse(), cache);
+			// Note that a resent query will have the same query ID.
+			serverResponse = DNSQueryHandler.buildAndSendQuery(message, server, node);
+			Set<ResourceRecord> nameservers = DNSQueryHandler.decodeAndCacheResponse(serverResponse.getTransactionID(), serverResponse.getResponse(), cache);
 			if (nameservers == null)
 				nameservers = Collections.emptySet();
 
-			if (p1Flag)
-				return; // For testing part 1 only
+			if (cache.getCachedResults(node).isEmpty() && !nameservers.isEmpty()) {
+				queryNextLevel(node, nameservers);
+			}
+		}
+		catch (MissedResponseException | FlagException e) {
+			System.out.println(e.getMessage());
+			reattemptSendAndDecode(message, node, server, serverResponse, 0);
+		}
+		catch (IOException | NullPointerException ignored) {
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+		}
+	}
 
-			queryNextLevel(node, nameservers);
-
+	private static void reattemptSendAndDecode(byte[] message, DNSNode node, InetAddress server,
+											   DNSServerResponse prevResponse,
+											   int maxAttempt) {
+		if (maxAttempt > MAX_ATTEMPTS) {
+			return;
+		}
+		DNSServerResponse serverResponse = null;
+		try {
+			message = DNSQueryHandler.getMessageQuery(node, prevResponse.getTransactionID(), message);
+			serverResponse = DNSQueryHandler.sendQuery(message, server, prevResponse.getTransactionID());
+			Set<ResourceRecord> nameservers = DNSQueryHandler.decodeAndCacheResponse(serverResponse.getTransactionID(),
+					serverResponse.getResponse(), cache);
+			if (cache.getCachedResults(node).isEmpty()) {
+				queryNextLevel(node, nameservers);
+			}
+		} catch (MissedResponseException e) {
+			System.out.println(e.getMessage());
+			reattemptSendAndDecode(message, node, server, serverResponse, maxAttempt + 1);
 		} catch (IOException | NullPointerException ignored) {
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 		}
 	}
+
 
 	/**
 	 * Query the next level DNS Server, if necessary
@@ -208,8 +283,15 @@ public class DNSLookupService {
 	 * @param node        Host name and record type of the query.
 	 * @param nameservers List of name servers returned from the previous level to query the next level.
 	 */
-	private static void queryNextLevel(DNSNode node, Set<ResourceRecord> nameservers) {
-		// TODO (PART 2): Implement this
+	private static void queryNextLevel(DNSNode node, Set<ResourceRecord> nameservers) throws Exception {
+		ResourceRecord nameServerToUse = (ResourceRecord) nameservers.toArray()[0];
+		DNSNode nameServerToUseDnsNode = new DNSNode(nameServerToUse.getTextResult(), RecordType.A);
+		Set<ResourceRecord> resourceRecords = resolveDNS(nameServerToUseDnsNode);
+		if (resourceRecords.isEmpty()) {
+			return;
+		}
+		ResourceRecord nameServerIPRecord = (ResourceRecord) resourceRecords.toArray()[0];
+		retrieveResultsFromServer(node, nameServerIPRecord.getInetResult());
 
 	}
 

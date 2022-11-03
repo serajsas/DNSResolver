@@ -1,6 +1,7 @@
 package ca.ubc.cs317.dnslookup;
 
 import java.io.DataInputStream;
+import java.util.HashSet;
 import java.util.Set;
 
 public class DNSResponse {
@@ -14,12 +15,14 @@ public class DNSResponse {
 		dnsrData = new DNSRData();
 	}
 
-	public Set<ResourceRecord> decode(int transactionID, DataInputStream dataInputStream,
-									  byte[] responseBuffer, DNSCache cache) throws Exception {
+	public Set<ResourceRecord> decode(int transactionID, DataInputStream dataInputStream, byte[] responseBuffer, DNSCache cache) throws Exception {
 		dnsHeader.decode(dataInputStream, transactionID);
 		dnsQuery.decode(dataInputStream, responseBuffer, dnsHeader.QDCOUNT);
 		dnsrData.decode(dataInputStream, responseBuffer, dnsHeader.ANCOUNT,
 				dnsHeader.ARCOUNT, dnsHeader.NSCOUNT, cache);
+		if (dnsHeader.isFlaggedError(this)) {
+			throw new FlagException();
+		}
 		if (DNSQueryHandler.verboseTracing) {
 			System.out.println("Response ID: Authoritative = " + (dnsHeader.AA != 0));
 			System.out.println("  Answers " + "(" + dnsHeader.ANCOUNT + ")");
@@ -35,7 +38,6 @@ public class DNSResponse {
 				DNSQueryHandler.verbosePrintResourceRecord(r, r.getType().getCode());
 			}
 		}
-		dnsHeader.isFlaggedError(this);
 		return dnsrData.nameServers;
 	}
 }
