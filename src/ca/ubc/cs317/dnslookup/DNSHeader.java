@@ -10,7 +10,8 @@ public class DNSHeader {
 	public DNSHeader() {
 	}
 
-	public DNSHeader(int ID, int QR, int opcode, int AA, int TC, int RD, int RA, int z, int RCODE, int QDCOUNT, int ANCOUNT, int NSCOUNT, int ARCOUNT) {
+	public DNSHeader(int ID, int QR, int opcode, int AA, int TC,
+					 int RD, int RA, int z, int RCODE, int QDCOUNT, int ANCOUNT, int NSCOUNT, int ARCOUNT) {
 		this.ID = ID;
 		this.QR = QR;
 		this.Opcode = opcode;
@@ -26,7 +27,8 @@ public class DNSHeader {
 		this.ARCOUNT = ARCOUNT;
 	}
 
-	public void decode(DataInputStream dataInputStream, int transactionID) throws IOException, MissedResponseException {
+	public void decode(DataInputStream dataInputStream, int transactionID)
+			throws IOException, MissedResponseException {
 		this.ID = dataInputStream.readUnsignedShort();
 		if (ID != transactionID) {
 			throw new MissedResponseException();
@@ -48,7 +50,8 @@ public class DNSHeader {
 
 	public void encode(DataOutputStream outputStream) throws IOException {
 		outputStream.writeShort(this.ID);
-		outputStream.writeShort((QR << 15) + (Opcode << 11) + (AA << 10) + (TC << 9) + (RD << 8) + (RA << 7) + (Z << 4) + RCODE);
+		outputStream.writeShort((QR << 15) + (Opcode << 11) +
+				(AA << 10) + (TC << 9) + (RD << 8) + (RA << 7) + (Z << 4) + RCODE);
 		outputStream.writeShort(QDCOUNT);
 		outputStream.writeShort(ANCOUNT);
 		outputStream.writeShort(NSCOUNT);
@@ -56,10 +59,8 @@ public class DNSHeader {
 	}
 
 	public boolean isFlaggedError(DNSResponse dnsResponse) {
-		if (this.RCODE == 1 || this.RCODE == 2 || this.RCODE == 3 || this.RCODE == 4 || this.RCODE == 5 ||
-				(this.RCODE == 0 && this.AA == 1 && dnsResponse.dnsrData.answers.isEmpty())) {
-			return true;
-		}
-		return false;
+		return this.RCODE == 1 || this.RCODE == 2 || this.RCODE == 3 ||
+				this.RCODE == 4 || this.RCODE == 5 ||
+				(this.RCODE == 0 && this.AA == 1 && dnsResponse.dnsrData.answers.isEmpty());
 	}
 }

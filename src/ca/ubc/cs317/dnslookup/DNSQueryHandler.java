@@ -49,42 +49,22 @@ public class DNSQueryHandler {
 	 * @throws IOException if an IO Exception occurs
 	 */
 	public static DNSServerResponse buildAndSendQuery(byte[] message, InetAddress server, DNSNode node) throws IOException {
-		if (verboseTracing) {
-			System.out.println();
-			System.out.println();
-		}
 		// upper-bound is exclusive, so I added a one to account for 65536
-		int transactionID = random.nextInt(65537);
-//		if (verboseTracing) {
-//			System.out.println("Query ID     " + transactionID + " " + node.getHostName() + "  " + node.getType() + " --> " + server.getHostAddress());
-//		}
-//		message = getMessageQuery(node, transactionID, message);
-//		DatagramPacket sentPacket = new DatagramPacket(message, message.length, server, DEFAULT_DNS_PORT);
-//		socket.send(sentPacket);
-//		byte[] responseBuffer = new byte[1024];
-//		DatagramPacket receivedPacket = new DatagramPacket(responseBuffer, responseBuffer.length);
-//		socket.receive(receivedPacket);
-//		return new DNSServerResponse(ByteBuffer.wrap(responseBuffer), transactionID);
-		return buildAndSendQueryWithID(message, server, node, transactionID);
+		DNSLookupService.dnsTransactionID.transactionID = random.nextInt(65537);
+		return buildAndSendQueryWithID(message, server, node, DNSLookupService.dnsTransactionID);
 	}
 
-	public static DNSServerResponse buildAndSendQueryWithID(byte[] message, InetAddress server, DNSNode node, int transactionID) throws IOException {
+	public static DNSServerResponse buildAndSendQueryWithID(byte[] message, InetAddress server, DNSNode node,
+															DNSTransactionID dnsTransactionID) throws IOException {
 		if (verboseTracing) {
 			System.out.println();
 			System.out.println();
 		}
-		// upper-bound is exclusive, so I added a one to account for 65536
-		//		int transactionID = random.nextInt(65537);
 		if (verboseTracing) {
-			System.out.println("Query ID     " + transactionID + " " + node.getHostName() + "  " + node.getType() + " --> " + server.getHostAddress());
+			System.out.println("Query ID     " + dnsTransactionID.transactionID + " " + node.getHostName() + "  " + node.getType() + " --> " + server.getHostAddress());
 		}
-		message = getMessageQuery(node, transactionID, message);
-		DatagramPacket sentPacket = new DatagramPacket(message, message.length, server, DEFAULT_DNS_PORT);
-		socket.send(sentPacket);
-		byte[] responseBuffer = new byte[1024];
-		DatagramPacket receivedPacket = new DatagramPacket(responseBuffer, responseBuffer.length);
-		socket.receive(receivedPacket);
-		return new DNSServerResponse(ByteBuffer.wrap(responseBuffer), transactionID);
+		message = getMessageQuery(node, dnsTransactionID.transactionID);
+		return sendQuery(message, server, dnsTransactionID.transactionID);
 	}
 
 	public static DNSServerResponse sendQuery(byte[] message, InetAddress server, int transactionID) throws IOException {
@@ -96,14 +76,13 @@ public class DNSQueryHandler {
 		return new DNSServerResponse(ByteBuffer.wrap(responseBuffer), transactionID);
 	}
 
-	public static byte[] getMessageQuery(DNSNode node, int transactionID, byte[] message) throws IOException {
+	public static byte[] getMessageQuery(DNSNode node, int transactionID) throws IOException {
 		DNSHeader dnsHeader = new DNSHeader(transactionID, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0001, 0x0000, 0x0000, 0x0000);
 		DNSQuery dnsQuery = new DNSQuery(node.getHostName(), node.getType().getCode(), 0x0001);
 		ByteArrayOutputStream stream = new ByteArrayOutputStream();
 		DataOutputStream outputStream = new DataOutputStream(stream);
 		dnsHeader.encode(outputStream);
 		dnsQuery.encode(outputStream);
-		//		System.arraycopy(stream.toByteArray(), 0, message, 0, stream.size());
 		return stream.toByteArray();
 	}
 
