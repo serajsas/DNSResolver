@@ -4,6 +4,9 @@ import java.io.DataInputStream;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * This class represents a DNS response
+ */
 public class DNSResponse {
 	public DNSHeader dnsHeader;
 	public DNSQuery dnsQuery;
@@ -15,11 +18,20 @@ public class DNSResponse {
 		dnsrData = new DNSRData();
 	}
 
+	/**
+	 * This function decodes the DNS response
+	 *
+	 * @param transactionID   The id of the query
+	 * @param dataInputStream DataInputStream
+	 * @param responseBuffer  byte[]
+	 * @param cache           Cache to store the result
+	 * @return Set<ResourceRecord>
+	 * @throws Exception if an Exception occurs
+	 */
 	public Set<ResourceRecord> decode(int transactionID, DataInputStream dataInputStream, byte[] responseBuffer, DNSCache cache) throws Exception {
 		dnsHeader.decode(dataInputStream, transactionID);
 		dnsQuery.decode(dataInputStream, responseBuffer, dnsHeader.QDCOUNT);
-		dnsrData.decode(dataInputStream, responseBuffer, dnsHeader.ANCOUNT,
-				dnsHeader.ARCOUNT, dnsHeader.NSCOUNT, cache);
+		dnsrData.decode(dataInputStream, responseBuffer, dnsHeader.ANCOUNT, dnsHeader.ARCOUNT, dnsHeader.NSCOUNT, cache);
 		if (dnsHeader.isFlaggedError(this)) {
 			throw new FlagException();
 		}

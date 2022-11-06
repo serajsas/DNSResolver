@@ -4,6 +4,9 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+/**
+ * This class represents the header for DNS query or DNS reply
+ */
 public class DNSHeader {
 	public int ID, QR, Opcode, AA, TC, RD, RA, Z, RCODE, QDCOUNT, ANCOUNT, NSCOUNT, ARCOUNT;
 
@@ -27,6 +30,13 @@ public class DNSHeader {
 		this.ARCOUNT = ARCOUNT;
 	}
 
+	/**
+	 * Decode DNS response
+	 * @param dataInputStream DataInputStream
+	 * @param transactionID transactionID
+	 * @throws IOException IOException
+	 * @throws MissedResponseException MissedResponseException
+	 */
 	public void decode(DataInputStream dataInputStream, int transactionID)
 			throws IOException, MissedResponseException {
 		this.ID = dataInputStream.readUnsignedShort();
@@ -48,6 +58,11 @@ public class DNSHeader {
 		ARCOUNT = dataInputStream.readUnsignedShort();
 	}
 
+	/**
+	 * Encode the query
+	 * @param outputStream DataOutputStream
+	 * @throws IOException IOException
+	 */
 	public void encode(DataOutputStream outputStream) throws IOException {
 		outputStream.writeShort(this.ID);
 		outputStream.writeShort((QR << 15) + (Opcode << 11) +
@@ -58,6 +73,11 @@ public class DNSHeader {
 		outputStream.writeShort(ARCOUNT);
 	}
 
+	/**
+	 *
+	 * @param dnsResponse DNSResponse
+	 * @return true if there is an error, false otherwise
+	 */
 	public boolean isFlaggedError(DNSResponse dnsResponse) {
 		return this.RCODE == 1 || this.RCODE == 2 || this.RCODE == 3 ||
 				this.RCODE == 4 || this.RCODE == 5 ||

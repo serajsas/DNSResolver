@@ -55,6 +55,19 @@ public class DNSQueryHandler {
 		return buildAndSendQueryWithID(message, server, node, DNSLookupService.dnsDataHolder);
 	}
 
+	/**
+	 * Builds the query with a specific ID, sends it to the server, and returns the response.
+	 *
+	 * This function is mainly used in case of a thrown exception. Another attempt is made with
+	 * the same query id but to a different server
+	 *
+	 * @param message Byte array used to store the query to DNS servers.
+	 * @param server The IP address of the server to which the query is being sent.
+	 * @param node  Host and record type to be used for search.
+	 * @param dnsDataHolder Keeps transaction ID and nameservers for the last query
+	 * @return DNSServerResponse
+	 * @throws IOException if an IO Exception occurs
+	 */
 	public static DNSServerResponse buildAndSendQueryWithID(byte[] message, InetAddress server, DNSNode node, DNSDataHolder dnsDataHolder) throws IOException {
 		if (verboseTracing) {
 			System.out.println();
@@ -67,6 +80,15 @@ public class DNSQueryHandler {
 		return sendQuery(message, server, dnsDataHolder.transactionID);
 	}
 
+	/**
+	 * This function just sends the query using socket
+	 *
+	 * @param message Byte array used to store the query to DNS servers.
+	 * @param server The IP address of the server to which the query is being sent
+	 * @param transactionID The id of the query
+	 * @return DNSServerResponse
+	 * @throws IOException if an IO Exception occurs
+	 */
 	public static DNSServerResponse sendQuery(byte[] message, InetAddress server, int transactionID) throws IOException {
 		DatagramPacket sentPacket = new DatagramPacket(message, message.length, server, DEFAULT_DNS_PORT);
 		socket.send(sentPacket);
@@ -76,6 +98,13 @@ public class DNSQueryHandler {
 		return new DNSServerResponse(ByteBuffer.wrap(responseBuffer), transactionID);
 	}
 
+	/**
+	 *
+	 * @param node DNSNode
+	 * @param transactionID The id of the query
+	 * @return byte[] that contains the message of the query
+	 * @throws IOException if an IO Exception occurs
+	 */
 	public static byte[] getMessageQuery(DNSNode node, int transactionID) throws IOException {
 		DNSHeader dnsHeader = new DNSHeader(transactionID, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0001, 0x0000, 0x0000, 0x0000);
 		DNSQuery dnsQuery = new DNSQuery(node.getHostName(), node.getType().getCode(), 0x0001);

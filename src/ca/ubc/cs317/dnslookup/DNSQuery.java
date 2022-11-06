@@ -4,6 +4,9 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+/**
+ * This class represent a DNS Query
+ */
 public class DNSQuery {
 	public String QNAME;
 	public int QTYPE, QCLASS;
@@ -17,6 +20,13 @@ public class DNSQuery {
 		this.QCLASS = QCLASS;
 	}
 
+	/**
+	 * Decode DNS Query response
+	 * @param inputStream DataInputStream
+	 * @param responseBuffer byte[]
+	 * @param qdcount qdcount
+	 * @throws IOException IOException
+	 */
 	public void decode(DataInputStream inputStream, byte[] responseBuffer, int qdcount) throws IOException {
 		// For this assignment the question count is not more than 1
 		if (qdcount > 0) {
@@ -27,6 +37,11 @@ public class DNSQuery {
 		}
 	}
 
+	/**
+	 * Encode DNS Query
+	 * @param stream DataOutputStream
+	 * @throws IOException IOException
+	 */
 	public void encode(DataOutputStream stream) throws IOException {
 		String[] domainNames = QNAME.split("\\.");
 		for (String domainName : domainNames) {

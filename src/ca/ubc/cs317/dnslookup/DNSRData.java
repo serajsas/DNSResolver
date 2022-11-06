@@ -9,6 +9,9 @@ import java.net.Inet6Address;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * This class keeps a set of each answers, nameServers, and additionalInformation
+ */
 public class DNSRData {
 	public Set<ResourceRecord> answers;
 	public Set<ResourceRecord> nameServers;
@@ -20,6 +23,17 @@ public class DNSRData {
 		additionalInformation = new HashSet<>();
 	}
 
+	/**
+	 * Decode the input stream and caches the Resource records
+	 *
+	 * @param dataInputStream DataInputStream
+	 * @param responseBuffer byte[]
+	 * @param ANCOUNT Answer Count
+	 * @param ARCOUNT Additional Information Count
+	 * @param NSCOUNT Name Servers count
+	 * @param cache Cache to store the result
+	 * @throws IOException if an IO Exception occurs
+	 */
 	public void decode(DataInputStream dataInputStream, byte[] responseBuffer, int ANCOUNT,
 					   int ARCOUNT, int NSCOUNT, DNSCache cache) throws IOException {
 		for (int i = 0; i < ANCOUNT + ARCOUNT + NSCOUNT; i++) {

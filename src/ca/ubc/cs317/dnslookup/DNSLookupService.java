@@ -9,7 +9,7 @@ import java.util.*;
 
 public class DNSLookupService {
 
-//	private static boolean p1Flag = false; // isolating part 1
+	private static boolean p1Flag = false; // isolating part 1
 	private static final int MAX_INDIRECTION_LEVEL = 10;
 	private static final int QUERY_RESEND_MAX_ATTEMPTS = 10;
 	private static InetAddress rootServer;
@@ -22,11 +22,9 @@ public class DNSLookupService {
 	 * @param args list of arguments specified in the command line.
 	 */
 	public static void main(String[] args) {
-		//
-		//		if (args.length == 2 && args[1].equals("-p1")) {
-		//			p1Flag = true;
-		//		} else
-		if (args.length != 1) {
+		if (args.length == 2 && args[1].equals("-p1")) {
+			p1Flag = true;
+		} else if (args.length != 1) {
 			System.err.println("Invalid call. Usage:");
 			System.err.println("\tjava -jar DNSLookupService.jar rootServer");
 			System.err.println("where rootServer is the IP address (in dotted form) of the root DNS server to start the search at.");
@@ -189,12 +187,12 @@ public class DNSLookupService {
 	/**
 	 * Attempts to resolve CNAME in the response
 	 *
-	 * @param node   Host and record type to be used for search.
+	 * @param node             Host and record type to be used for search.
 	 * @param indirectionLevel Control to limit the number of recursive calls due to CNAME redirection.
-	 *               The initial call should be made with 0 (zero), while recursive calls for
-	 *               regarding CNAME results should increment this value by 1. Once this value
-	 *               reaches MAX_INDIRECTION_LEVEL, the function prints an error message and
-	 *               returns an empty set.
+	 *                         The initial call should be made with 0 (zero), while recursive calls for
+	 *                         regarding CNAME results should increment this value by 1. Once this value
+	 *                         reaches MAX_INDIRECTION_LEVEL, the function prints an error message and
+	 *                         returns an empty set.
 	 * @return DNSNode
 	 */
 	private static DNSNode getCnameResourceRecords(DNSNode node, int indirectionLevel) {
@@ -242,8 +240,7 @@ public class DNSLookupService {
 		try {
 			// Note that a resent query will have the same query ID.
 			serverResponse = DNSQueryHandler.buildAndSendQuery(message, server, node);
-			Set<ResourceRecord> nameservers = DNSQueryHandler.decodeAndCacheResponse(serverResponse.getTransactionID(),
-					serverResponse.getResponse(), cache);
+			Set<ResourceRecord> nameservers = DNSQueryHandler.decodeAndCacheResponse(serverResponse.getTransactionID(), serverResponse.getResponse(), cache);
 			if (nameservers == null)
 				nameservers = Collections.emptySet();
 
@@ -270,8 +267,7 @@ public class DNSLookupService {
 	 */
 	private static List<ResourceRecord> resolveNameServerIntoIP() {
 		int randomServerIndex = DNSQueryHandler.random.nextInt(dnsDataHolder.nameservers.size());
-		DNSNode nameServerToUseDnsNode = new DNSNode(dnsDataHolder.nameservers.get(randomServerIndex).getTextResult(),
-				RecordType.A);
+		DNSNode nameServerToUseDnsNode = new DNSNode(dnsDataHolder.nameservers.get(randomServerIndex).getTextResult(), RecordType.A);
 		return resolveDNS(nameServerToUseDnsNode).stream().toList();
 	}
 
@@ -290,10 +286,8 @@ public class DNSLookupService {
 		try {
 			List<ResourceRecord> records = resolveNameServerIntoIP();
 			int randomServerIndex = DNSQueryHandler.random.nextInt(records.size());
-			DNSServerResponse serverResponse = DNSQueryHandler.buildAndSendQueryWithID(message,
-					records.get(randomServerIndex).getInetResult(), node, dnsDataHolder);
-			Set<ResourceRecord> nameservers = DNSQueryHandler.decodeAndCacheResponse(serverResponse.getTransactionID(),
-					serverResponse.getResponse(), cache);
+			DNSServerResponse serverResponse = DNSQueryHandler.buildAndSendQueryWithID(message, records.get(randomServerIndex).getInetResult(), node, dnsDataHolder);
+			Set<ResourceRecord> nameservers = DNSQueryHandler.decodeAndCacheResponse(serverResponse.getTransactionID(), serverResponse.getResponse(), cache);
 			queryNextLevel(node, nameservers);
 		} catch (Exception e) {
 			if (DNSQueryHandler.verboseTracing) {
@@ -334,8 +328,7 @@ public class DNSLookupService {
 		if (results.isEmpty())
 			System.out.printf("%-30s %-5s %-8d %s\n", node.getHostName(), node.getType(), -1, "0.0.0.0");
 		for (ResourceRecord record : results) {
-			System.out.printf("%-30s %-5s %-8d %s\n", node.getHostName(), node.getType(), record.getTTL(),
-					record.getTextResult());
+			System.out.printf("%-30s %-5s %-8d %s\n", node.getHostName(), node.getType(), record.getTTL(), record.getTextResult());
 		}
 	}
 }

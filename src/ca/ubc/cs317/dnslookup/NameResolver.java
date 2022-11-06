@@ -5,7 +5,18 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * This class is responsible for resolving a name from the response
+ */
 public class NameResolver {
+	/**
+	 * This function resolves the name in a response, it handles different cases when there is a pointer/label
+	 *
+	 * @param inputStream DataInputStream
+	 * @param responseBuffer byte[]
+	 * @return String that represents the name
+	 * @throws IOException if an IO Exception occurs
+	 */
 	public static String getName(DataInputStream inputStream, byte[] responseBuffer) throws IOException {
 		StringBuilder sb = new StringBuilder();
 		inputStream.mark(1);
